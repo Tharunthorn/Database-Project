@@ -4,6 +4,15 @@ const API_BASE = '/api';
 
 const api = axios.create({ baseURL: API_BASE });
 
+// Intercept requests to attach the auth token from localStorage
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('taskflow-token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
 // ─── Users (MySQL) ───
 export const getUsers = () => api.get('/users/');
 export const createUser = (data) => api.post('/users/', data);

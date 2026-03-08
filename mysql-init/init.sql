@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     full_name VARCHAR(100) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) DEFAULT 'member',
     is_active BOOLEAN DEFAULT TRUE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -36,11 +37,12 @@ CREATE TABLE IF NOT EXISTS boards (
     INDEX idx_project (project_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Seed data
-INSERT INTO users (username, email, full_name, role) VALUES
-('admin', 'admin@taskflow.com', 'System Admin', 'admin'),
-('johndoe', 'john@example.com', 'John Doe', 'member'),
-('janedoe', 'jane@example.com', 'Jane Doe', 'member');
+-- Seed data (password for all users: password123)
+-- Hash generated with passlib bcrypt
+INSERT INTO users (username, email, full_name, password_hash, role) VALUES
+('admin', 'admin@taskflow.com', 'System Admin', '$2b$12$blnf9XecarC8dbWGPNrbfuXnRZ2IfVuJ7pF7koWf.0NlSYJ6zSubG', 'admin'),
+('johndoe', 'john@example.com', 'John Doe', '$2b$12$blnf9XecarC8dbWGPNrbfuXnRZ2IfVuJ7pF7koWf.0NlSYJ6zSubG', 'member'),
+('janedoe', 'jane@example.com', 'Jane Doe', '$2b$12$blnf9XecarC8dbWGPNrbfuXnRZ2IfVuJ7pF7koWf.0NlSYJ6zSubG', 'member');
 
 INSERT INTO projects (name, description, owner_id) VALUES
 ('Website Redesign', 'Complete overhaul of the company website with modern design', 1),

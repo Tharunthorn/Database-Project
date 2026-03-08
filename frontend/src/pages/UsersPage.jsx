@@ -55,13 +55,12 @@ export default function UsersPage() {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Delete this user?')) return;
         try {
             await deleteUser(id);
             showToast('User deleted!');
             load();
         } catch (err) {
-            showToast(err.response?.data?.detail || 'Error', 'error');
+            showToast(err.response?.data?.detail || 'Error deleting user', 'error');
         }
     };
 

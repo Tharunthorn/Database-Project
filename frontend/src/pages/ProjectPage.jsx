@@ -71,13 +71,12 @@ export default function ProjectPage() {
 
     const handleDeleteBoard = async (boardId, e) => {
         e.stopPropagation();
-        if (!confirm('Delete this board?')) return;
         try {
             await deleteBoard(boardId);
             showToast('Board deleted!');
             load();
         } catch (err) {
-            showToast(err.response?.data?.detail || 'Error', 'error');
+            showToast(err.response?.data?.detail || 'Error deleting board', 'error');
         }
     };
 
@@ -101,13 +100,12 @@ export default function ProjectPage() {
     };
 
     const handleProjectDelete = async () => {
-        if (!confirm('Delete this project?')) return;
         try {
             await deleteProject(projectId);
             showToast('Project deleted!');
             navigate('/');
         } catch (err) {
-            showToast(err.response?.data?.detail || 'Error', 'error');
+            showToast(err.response?.data?.detail || 'Error deleting project', 'error');
         }
     };
 

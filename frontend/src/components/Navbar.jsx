@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
 
 export default function Navbar() {
     const location = useLocation();
@@ -16,9 +17,10 @@ export default function Navbar() {
         <nav className="navbar">
             <h1>{getTitle()}</h1>
             <div className="navbar-actions">
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                     MySQL + MongoDB
                 </span>
+                <ThemeToggle />
             </div>
         </nav>
     );

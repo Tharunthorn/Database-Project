@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiPlus, FiArrowLeft } from 'react-icons/fi';
 import { getBoard, getTasks, createTask, updateTask, deleteTask, getActivities } from '../api';
@@ -21,6 +21,10 @@ export default function BoardPage() {
     const [editingTask, setEditingTask] = useState(null);
     const [createColumn, setCreateColumn] = useState('To Do');
     const [toast, setToast] = useState(null);
+
+    // Drag state
+    const [draggedTask, setDraggedTask] = useState(null);
+    const [dragOverColumn, setDragOverColumn] = useState(null);
 
     const load = async () => {
         try {
@@ -76,15 +80,77 @@ export default function BoardPage() {
     };
 
     const handleDelete = async (taskId) => {
-        if (!confirm('Delete this task?')) return;
         try {
             await deleteTask(taskId);
             setShowModal(false);
             showToast('Task deleted!');
             load();
         } catch (err) {
-            showToast(err.response?.data?.detail || 'Error', 'error');
+            showToast(err.response?.data?.detail || 'Error deleting task', 'error');
         }
+    };
+
+    // ── Drag & Drop Handlers ──
+    const handleDragStart = (e, task) => {
+        setDraggedTask(task);
+        e.dataTransfer.effectAllowed = 'move';
+        // Add dragging class after a tick
+        requestAnimationFrame(() => {
+            e.target.classList.add('dragging');
+        });
+    };
+
+    const handleDragEnd = (e) => {
+        e.target.classList.remove('dragging');
+        setDraggedTask(null);
+        setDragOverColumn(null);
+    };
+
+    const handleDragOver = (e, column) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDragOverColumn(column);
+    };
+
+    const handleDragLeave = (e) => {
+        // Only clear if leaving the column entirely
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+            setDragOverColumn(null);
+        }
+    };
+
+    const handleDrop = async (e, targetColumn) => {
+        e.preventDefault();
+        setDragOverColumn(null);
+
+        if (!draggedTask || draggedTask.column === targetColumn) {
+            setDraggedTask(null);
+            return;
+        }
+
+        // Optimistic update
+        setTasks(prev =>
+            prev.map(t =>
+                t.id === draggedTask.id ? { ...t, column: targetColumn } : t
+            )
+        );
+
+        try {
+            await updateTask(draggedTask.id, { column: targetColumn });
+            showToast(`Moved to ${targetColumn}`);
+            load(); // Refresh to get latest state
+        } catch (err) {
+            showToast('Failed to move task', 'error');
+            load(); // Revert
+        }
+
+        setDraggedTask(null);
+    };
+
+    // Touch drag support for mobile
+    const handleTouchMove = (task) => {
+        // For mobile, we use a simpler approach via the task modal column selector
+        // The drag-and-drop is primarily for desktop
     };
 
     const getColumnTasks = (column) =>
@@ -113,7 +179,7 @@ export default function BoardPage() {
                         <FiArrowLeft /> Back
                     </button>
                     <h1 className="page-title">{board.name}</h1>
-                    <p className="page-subtitle">Kanban board — Tasks stored in MongoDB</p>
+                    <p className="page-subtitle">Kanban board — Drag tasks between columns</p>
                 </div>
             </div>
 
@@ -133,16 +199,28 @@ export default function BoardPage() {
                                     <FiPlus size={16} />
                                 </button>
                             </div>
-                            <div className="column-body">
+                            <div
+                                className={`column-body ${dragOverColumn === key ? 'drag-over' : ''}`}
+                                onDragOver={(e) => handleDragOver(e, key)}
+                                onDragLeave={handleDragLeave}
+                                onDrop={(e) => handleDrop(e, key)}
+                            >
                                 {colTasks.map((task) => (
-                                    <TaskCard key={task.id} task={task} onClick={openEdit} />
+                                    <div
+                                        key={task.id}
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, task)}
+                                        onDragEnd={handleDragEnd}
+                                    >
+                                        <TaskCard task={task} onClick={openEdit} />
+                                    </div>
                                 ))}
                                 {colTasks.length === 0 && (
                                     <div style={{
                                         textAlign: 'center', padding: '20px',
                                         color: 'var(--text-muted)', fontSize: '0.8rem',
                                     }}>
-                                        No tasks
+                                        {dragOverColumn === key ? 'Drop here' : 'No tasks'}
                                     </div>
                                 )}
                             </div>
@@ -151,7 +229,7 @@ export default function BoardPage() {
                 })}
             </div>
 
-            {/* Activity sidebar (below on this layout) */}
+            {/* Activity Feed */}
             {activities.length > 0 && (
                 <div className="card" style={{ marginTop: '24px' }}>
                     <div className="card-header">
